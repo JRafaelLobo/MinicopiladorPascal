@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // Cargar archivo .pas
-            CharStream input = CharStreams.fromFileName("tests/ciclos.pas");
+            CharStream input = CharStreams.fromFileName("tests/test.pas");
 
             // Crear el lexer
             InterpreterLexer lexer = new InterpreterLexer(input);

@@ -1,8 +1,18 @@
-PROGRAM Prueba;
+PROGRAM RecursiveExample;
 VAR
-   a, b : INTEGER;
+    num, result: INTEGER;
+
+FUNCTION Factorial(n: INTEGER): INTEGER;
 BEGIN
-   a := 5;
-   b := 10;
-   WRITE('La suma es: ', a + b);
+    IF n = 0 THEN
+        Factorial := 1
+    ELSE
+        Factorial := n * Factorial(n - 1);
+END;
+
+BEGIN
+    num := 5;
+    result := Factorial(num);
+    WRITE('El factorial de ', num, ' es ', result);
 END.
+

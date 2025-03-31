@@ -5,7 +5,7 @@ options { caseInsensitive = true; }
 // --- Reglas del parser ---
 program : PROGRAM ID ';' block '.' ;
 
-block : declarations? BEGIN statements? END ; // <- Cambio importante aquí
+block : declarations? BEGIN statements? END ;
 
 declarations : VAR_KW varDeclList? (functionDecl | procedureDecl)* ;
 
@@ -60,8 +60,8 @@ term : factor ((MULT | DIV_OP | DIV | MOD) factor)* ;
 
 factor : (PLUS | MINUS)? (ID | INT_CONST | CHAR_CONST | STRING_CONST | arrayAccess | functionCall | '(' expression ')' | NOT factor) ;
 
-// --- Reglas para funciones y procedimientos ---
-functionDecl : FUNCTION ID ':' type ';' BEGIN statements? END ';' ;
+// --- Modificación: ahora las funciones pueden recibir parámetros ---
+functionDecl : FUNCTION ID '(' parameters? ')' ':' type ';' block ';' ;
 
 procedureDecl : PROCEDURE ID ('(' parameters? ')')? ';' block ';' ;
 
