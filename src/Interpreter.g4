@@ -60,10 +60,10 @@ term : factor ((MULT | DIV_OP | DIV | MOD) factor)* ;
 
 factor : (PLUS | MINUS)? (ID | INT_CONST | CHAR_CONST | STRING_CONST | arrayAccess | functionCall | '(' expression ')' | NOT factor) ;
 
-// --- Modificación: ahora las funciones pueden recibir parámetros ---
-functionDecl : FUNCTION ID '(' parameters? ')' ':' type ';' block ';' ;
+// --- Corrección para permitir funciones y procedimientos con y sin paréntesis ---
+functionDecl : FUNCTION ID ( '(' parameters? ')' )? ':' type ';' block ';' ;
+procedureDecl : PROCEDURE ID ( '(' parameters? ')' )? ';' block ';' ;
 
-procedureDecl : PROCEDURE ID ('(' parameters? ')')? ';' block ';' ;
 
 parameters : paramList ;
 
