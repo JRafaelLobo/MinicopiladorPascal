@@ -80,6 +80,8 @@ INTEGER   : 'INTEGER';
 CHAR      : 'CHAR';
 STRING    : 'STRING';
 BOOLEAN   : 'BOOLEAN';
+TRUE      : 'TRUE';
+FALSE     : 'FALSE';
 ARRAY     : 'ARRAY';
 OF        : 'OF';
 FUNCTION  : 'FUNCTION';
