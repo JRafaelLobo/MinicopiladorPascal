@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class InterpreterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements InterpreterVisitor<T> {
+public abstract class InterpreterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements InterpreterVisitor<T> {
 	/**
 	 * {@inheritDoc}
 	 *
@@ -173,6 +173,7 @@ public class InterpreterBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitTerm(InterpreterParser.TermContext ctx) { return visitChildren(ctx); }
+s
 	/**
 	 * {@inheritDoc}
 	 *
