@@ -173,7 +173,7 @@ public abstract class InterpreterBaseVisitor<T> extends AbstractParseTreeVisitor
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitTerm(InterpreterParser.TermContext ctx) { return visitChildren(ctx); }
-s
+
 	/**
 	 * {@inheritDoc}
 	 *

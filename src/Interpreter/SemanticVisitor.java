@@ -2,9 +2,19 @@ package Interpreter;
 
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
-
 import java.util.*;
 
+/**
+ * Esta clase realiza el **análisis semántico** del árbol generado por ANTLR para Mini-Pascal.
+ * Extiende de `InterpreterBaseVisitor<Void>`, por lo tanto sobreescribe los métodos `visitXxx` para validar semánticamente el código.
+ *
+ * Funcionalidades clave:
+ * - Manejo de scopes anidados (variables locales, globales, funciones, procedimientos)
+ * - Validación de tipos en asignaciones
+ * - Verificación de existencia de variables y funciones
+ * - Control de retorno en funciones
+ * - Reporte de errores semánticos
+ */
 public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
 
     private Scope currentScope;
@@ -15,7 +25,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
     private boolean hasReturnValue = false;
 
     public SemanticVisitor() {
-        this.currentScope = new Scope(null); // ámbito global
+        this.currentScope = new Scope(null); // Scope global
     }
 
     public List<String> getErrors() {
@@ -27,11 +37,13 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
                 token.getLine(), token.getCharPositionInLine(), message));
     }
 
+    // Programa: inicia visitando el bloque principal
     @Override
     public Void visitProgram(InterpreterParser.ProgramContext ctx) {
         return visit(ctx.block());
     }
 
+    // Bloque: incluye declaraciones y sentencias
     @Override
     public Void visitBlock(InterpreterParser.BlockContext ctx) {
         if (ctx.declarations() != null) {
@@ -43,6 +55,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Maneja todas las declaraciones: variables, funciones, procedimientos
     @Override
     public Void visitDeclarations(InterpreterParser.DeclarationsContext ctx) {
         if (ctx.varDeclList() != null) {
@@ -57,9 +70,10 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Declaración de variable
     @Override
     public Void visitVarDecl(InterpreterParser.VarDeclContext ctx) {
-        String type = ctx.type().getText().toLowerCase(); // simplificado
+        String type = ctx.type().getText().toLowerCase(); // Obtener tipo
         for (var idToken : ctx.ID()) {
             String name = idToken.getText();
             if (!currentScope.define(new Symbol(name, type, false))) {
@@ -69,6 +83,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Declaración de función: maneja el scope interno y el retorno
     @Override
     public Void visitFunctionDecl(InterpreterParser.FunctionDeclContext ctx) {
         String name = ctx.ID().getText();
@@ -77,13 +92,13 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
             return null;
         }
 
-
         String returnType = ctx.type().getText().toLowerCase();
         if (!currentScope.define(new Symbol(name, returnType, false))) {
             reportError(ctx.ID().getSymbol(), "Función ya definida: " + name);
         }
         functions.put(name, new Symbol(name, returnType, false));
 
+        // Crear un nuevo scope para la función
         Scope functionScope = new Scope(currentScope);
         Scope previous = currentScope;
         currentScope = functionScope;
@@ -108,6 +123,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Declaración de procedimiento
     @Override
     public Void visitProcedureDecl(InterpreterParser.ProcedureDeclContext ctx) {
         String name = ctx.ID().getText();
@@ -115,6 +131,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
             reportError(ctx.ID().getSymbol(), "Procedimiento ya definido: " + name);
         }
 
+        // Nuevo scope para el procedimiento
         Scope procedureScope = new Scope(currentScope);
         Scope previous = currentScope;
         currentScope = procedureScope;
@@ -128,6 +145,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Parámetros de función o procedimiento
     @Override
     public Void visitParam(InterpreterParser.ParamContext ctx) {
         boolean isReference = ctx.VAR_KW() != null;
@@ -141,6 +159,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Inferencia de tipo de una expresión para validación
     private String inferType(InterpreterParser.ExpressionContext expr) {
         String text = expr.getText();
 
@@ -158,7 +177,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return "unknown";
     }
 
-
+    // Asignaciones
     @Override
     public Void visitAssignment(InterpreterParser.AssignmentContext ctx) {
         String varName = ctx.getChild(0).getText();
@@ -174,7 +193,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return visit(ctx.expression());
     }
 
-
+    // Llamadas a funciones
     @Override
     public Void visitFunctionCall(InterpreterParser.FunctionCallContext ctx) {
         String name = ctx.ID().getText();
@@ -182,10 +201,10 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         if (symbol == null) {
             reportError(ctx.ID().getSymbol(), "Función o procedimiento no declarado: " + name);
         }
-        // En una versión completa podrías validar cantidad y tipo de parámetros aquí
         return visitChildren(ctx);
     }
 
+    // Validación de variable en read
     @Override
     public Void visitReadStatement(InterpreterParser.ReadStatementContext ctx) {
         String varName = ctx.ID().getText();
@@ -196,11 +215,10 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Validación de variables en write
     @Override
     public Void visitWriteStatement(InterpreterParser.WriteStatementContext ctx) {
         for (var expr : ctx.expression()) {
-            String text = expr.getText();
-            // Si es un identificador simple (no número ni literal)
             if (expr.getChildCount() == 1 && expr.getChild(0).getText().matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
                 String varName = expr.getText();
                 Symbol symbol = currentScope.resolve(varName);
@@ -214,7 +232,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
-
+    // Validación de estructuras de control
     @Override
     public Void visitIfStatement(InterpreterParser.IfStatementContext ctx) {
         visit(ctx.expression());
@@ -245,6 +263,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    // Validación del uso de identificadores (ej. en expresiones)
     @Override
     public Void visitFactor(InterpreterParser.FactorContext ctx) {
         if (ctx.ID() != null) {
