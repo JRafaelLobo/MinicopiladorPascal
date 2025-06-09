@@ -1,8 +1,16 @@
-program TipadoFuerte;
+program PruebaSemantica;
 
 var
-  b: boolean;
+  x: integer;
+  y: boolean;
+
+function Sumar: integer;
+begin
+  Sumar := 10;
+end;
 
 begin
-  b := false;
+  x := 5;
+  y := true;
+  x := Sumar();  { ✅ Esta llamada pasa, aunque no verifiques parámetros aún }
 end.

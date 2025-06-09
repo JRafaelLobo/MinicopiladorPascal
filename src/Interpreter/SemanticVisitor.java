@@ -159,15 +159,35 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    private InterpreterParser.FunctionCallContext findFunctionCall(org.antlr.v4.runtime.tree.ParseTree tree) {
+        if (tree instanceof InterpreterParser.FunctionCallContext) {
+            return (InterpreterParser.FunctionCallContext) tree;
+        }
+        for (int i = 0; i < tree.getChildCount(); i++) {
+            InterpreterParser.FunctionCallContext result = findFunctionCall(tree.getChild(i));
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+
     // Inferencia de tipo de una expresión para validación
     private String inferType(InterpreterParser.ExpressionContext expr) {
-        String text = expr.getText();
+        // Revisar si contiene una llamada a función
+        InterpreterParser.FunctionCallContext call = findFunctionCall(expr);
+        if (call != null) {
+            String name = call.ID().getText();
+            Symbol func = functions.get(name);
+            if (func != null) return func.type;
+        }
 
-        if (text.equalsIgnoreCase("true") || text.equalsIgnoreCase("false")) return "boolean";
+        String text = expr.getText().toLowerCase();
+        if (text.equals("true") || text.equals("false")) return "boolean";
         if (text.matches("^\\d+$")) return "integer";
         if (text.matches("^'.'$")) return "char";
         if (text.matches("^'.*'$")) return "string";
 
+        // Identificador simple
         if (expr.getChildCount() == 1 && expr.getChild(0) instanceof TerminalNode) {
             String varName = expr.getText();
             Symbol symbol = currentScope.resolve(varName);
@@ -176,6 +196,8 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
 
         return "unknown";
     }
+
+
 
     // Asignaciones
     @Override
@@ -190,8 +212,15 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
                 reportError(ctx.getStart(), "Asignación con tipo incompatible: " + exprType + " a " + symbol.type);
             }
         }
+
+        // ✅ Marcar retorno si se está asignando al nombre de la función
+        if (insideFunction && varName.equals(currentFunctionName)) {
+            hasReturnValue = true;
+        }
+
         return visit(ctx.expression());
     }
+
 
     // Llamadas a funciones
     @Override
