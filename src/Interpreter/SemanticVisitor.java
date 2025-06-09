@@ -266,6 +266,13 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
     // Validación del uso de identificadores (ej. en expresiones)
     @Override
     public Void visitFactor(InterpreterParser.FactorContext ctx) {
+        String text = ctx.getText().toLowerCase();
+
+        if (text.equals("true") || text.equals("false")) {
+            // Constantes booleanas válidas
+            return null;
+        }
+
         if (ctx.ID() != null) {
             String name = ctx.ID().getText();
             Symbol symbol = currentScope.resolve(name);
@@ -273,6 +280,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
                 reportError(ctx.ID().getSymbol(), "Identificador no declarado: " + name);
             }
         }
+
         return visitChildren(ctx);
     }
 }
