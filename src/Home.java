@@ -18,7 +18,7 @@ public class Home extends JFrame {
         compilarButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println("Compilar");
+                System.out.println(textBox.getText());
             }
         });
         mostrarIRButton.addMouseListener(new MouseAdapter() {
