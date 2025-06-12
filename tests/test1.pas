@@ -1,7 +1,9 @@
-PROGRAM Test;
-VAR
-    x, y: INTEGE;
-BEGIN
-    x := 10;
-    y := x + 5;
-END.
+program Test1;
+var
+  a, b, c: integer;
+
+begin
+  a := 5;
+  b := 10;
+  c := a + b * 2;
+end.

@@ -1,6 +1,7 @@
 package Interpreter;
 
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.*;
 
@@ -172,30 +173,67 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
 
 
     // Inferencia de tipo de una expresión para validación
-    private String inferType(InterpreterParser.ExpressionContext expr) {
-        // Revisar si contiene una llamada a función
-        InterpreterParser.FunctionCallContext call = findFunctionCall(expr);
-        if (call != null) {
-            String name = call.ID().getText();
-            Symbol func = functions.get(name);
-            if (func != null) return func.type;
+    private String inferType(ParseTree node) {
+        if (node == null) return "unknown";
+
+        // Manejo de llamadas a funciones (si estamos dentro de una expresión)
+        if (node instanceof InterpreterParser.ExpressionContext exprCtx) {
+            InterpreterParser.FunctionCallContext call = findFunctionCall(exprCtx);
+            if (call != null) {
+                String name = call.ID().getText();
+                Symbol func = functions.get(name);
+                if (func != null) return func.type;
+            }
         }
 
-        String text = expr.getText().toLowerCase();
+        String text = node.getText().toLowerCase();
+
+        // Booleanos
         if (text.equals("true") || text.equals("false")) return "boolean";
+
+        // Enteros
         if (text.matches("^\\d+$")) return "integer";
+
+        // Caracter
         if (text.matches("^'.'$")) return "char";
-        if (text.matches("^'.*'$")) return "string";
+
+        // Cadenas
+        if (text.matches("^\".*\"$") || text.matches("^'.*'$")) return "string";
 
         // Identificador simple
-        if (expr.getChildCount() == 1 && expr.getChild(0) instanceof TerminalNode) {
-            String varName = expr.getText();
+        if (node instanceof TerminalNode) {
+            String varName = node.getText();
             Symbol symbol = currentScope.resolve(varName);
             if (symbol != null) return symbol.type;
         }
 
+        // Operación binaria (ej: a + b, b * 2)
+        if (node.getChildCount() == 3) {
+            String leftType = inferType(node.getChild(0));
+            String rightType = inferType(node.getChild(2));
+            String operator = node.getChild(1).getText();
+
+            if (leftType.equals("integer") && rightType.equals("integer")) return "integer";
+            if (leftType.equals("string") && rightType.equals("string")) return "string";
+            if (leftType.equals("char") && rightType.equals("char")) return "string";
+            if (leftType.equals("boolean") && rightType.equals("boolean")) return "boolean";
+            return "unknown";
+        }
+
+        // Subexpresiones
+        if (node.getChildCount() == 1) {
+            return inferType(node.getChild(0));
+        }
+
+        // Exploración general
+        for (int i = 0; i < node.getChildCount(); i++) {
+            String childType = inferType(node.getChild(i));
+            if (!childType.equals("unknown")) return childType;
+        }
+
         return "unknown";
     }
+
 
 
 
