@@ -1,10 +1,10 @@
-program Test4;
+program test3;
 var
-  x: integer;
+  b: integer;
 begin
-  x := 3;
-  if x < 5 then
-    x := x + 1
+  b := 3;
+  if b = 0 then
+    b := 1
   else
-    x := x - 1;
+    b := b + 1;
 end.

@@ -8,7 +8,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
-            CharStream input = CharStreams.fromFileName("tests/test3.pas");
+            CharStream input = CharStreams.fromFileName("tests/test9.pas");
 
             // Instancia el analizador léxico generado por ANTLR
             InterpreterLexer lexer = new InterpreterLexer(input);

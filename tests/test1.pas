@@ -1,9 +1,8 @@
-program Test1;
+program test1;
 var
-  a, b, c: integer;
-
+  x, y, z: integer;
 begin
-  a := 5;
-  b := 10;
-  c := a + b * 2;
+  x := 5;
+  y := 10;
+  z := x + y * 2;
 end.
