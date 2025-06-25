@@ -1,4 +1,6 @@
 import Interpreter.*;
+import RepresentacionIntermedia.CodigoIntermedio;
+import RepresentacionIntermedia.Cuadruplo;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -8,7 +10,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
-            CharStream input = CharStreams.fromFileName("tests/test9.pas");
+            CharStream input = CharStreams.fromFileName("tests/test5.pas");
 
             // Instancia el analizador léxico generado por ANTLR
             InterpreterLexer lexer = new InterpreterLexer(input);
@@ -48,8 +50,10 @@ public class Main {
             irGen.visit(tree);
 
             System.out.println("\nCódigo intermedio de tres direcciones:");
-            for (String instr : irGen.getCode()) {
-                System.out.println(instr);
+            CodigoIntermedio codigo = irGen.getCodigo();
+
+            for (Cuadruplo c : codigo.getCuadruplos()) {
+                System.out.println(c);
             }
 
         } catch (IOException e) {

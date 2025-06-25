@@ -1,14 +1,12 @@
 package Interpreter;
 
-import java.util.ArrayList;
-import java.util.List;
+import RepresentacionIntermedia.CodigoIntermedio;
 
 public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
     private int tempCount = 0;
     private int labelCount = 0;
 
-    private final List<String> funcCode = new ArrayList<>();
-    private final List<String> mainCode = new ArrayList<>();
+    private CodigoIntermedio codigo = new CodigoIntermedio();
 
     private boolean inFunction = false;
     private String currentFunctionName = null;
@@ -21,19 +19,8 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         return "L" + (labelCount++);
     }
 
-    public List<String> getCode() {
-        List<String> all = new ArrayList<>();
-        all.addAll(funcCode);
-        all.addAll(mainCode);
-        return all;
-    }
-
-    private void addCode(String line) {
-        if (inFunction) {
-            funcCode.add(line);
-        } else {
-            mainCode.add(line);
-        }
+    public CodigoIntermedio getCodigo() {
+        return codigo;
     }
 
     @Override
@@ -41,10 +28,10 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         String expr = visit(ctx.expression());
         String id = ctx.ID() != null ? ctx.ID().getText() : ctx.arrayAccess().getText();
 
-        addCode(id + " = " + expr);
+        codigo.agregar("=", expr, "", id);
 
         if (inFunction && id.equals(currentFunctionName)) {
-            addCode("return " + expr);
+            codigo.agregar("return", expr, "", "");
         }
 
         return null;
@@ -61,7 +48,7 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
             String right = visit(ctx.term(i));
             String op = ctx.getChild(2 * i - 1).getText();
             String temp = newTemp();
-            addCode(temp + " = " + left + " " + op + " " + right);
+            codigo.agregar(op, left, right, temp);
             left = temp;
         }
         return left;
@@ -78,7 +65,7 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
             String right = visit(ctx.factor(i));
             String op = ctx.getChild(2 * i - 1).getText();
             String temp = newTemp();
-            addCode(temp + " = " + left + " " + op + " " + right);
+            codigo.agregar(op, left, right, temp);
             left = temp;
         }
         return left;
@@ -88,7 +75,6 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
     public String visitFactor(InterpreterParser.FactorContext ctx) {
         if (ctx.ID() != null) {
             String idText = ctx.ID().getText();
-            // Detecta true/false aunque no sean tokens especiales
             if (idText.equalsIgnoreCase("true")) return "true";
             if (idText.equalsIgnoreCase("false")) return "false";
             return idText;
@@ -101,7 +87,7 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         if (ctx.NOT() != null) {
             String operand = visit(ctx.factor());
             String temp = newTemp();
-            addCode(temp + " = not " + operand);
+            codigo.agregar("not", operand, "", temp);
             return temp;
         }
 
@@ -110,17 +96,17 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
 
     @Override
     public String visitFunctionCall(InterpreterParser.FunctionCallContext ctx) {
-        List<String> args = new ArrayList<>();
+        java.util.List<String> args = new java.util.ArrayList<>();
         if (ctx.expression().size() > 0) {
             for (InterpreterParser.ExpressionContext expr : ctx.expression()) {
                 args.add(visit(expr));
             }
         }
         for (String arg : args) {
-            addCode("param " + arg);
+            codigo.agregar("param", arg, "", "");
         }
         String temp = newTemp();
-        addCode(temp + " = call " + ctx.ID().getText() + ", " + args.size());
+        codigo.agregar("call", ctx.ID().getText(), Integer.toString(args.size()), temp);
         return temp;
     }
 
@@ -130,17 +116,17 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         String labelEnd = newLabel();
 
         if (ctx.statement().size() == 1) {
-            addCode("ifFalse " + condition + " goto " + labelEnd);
+            codigo.agregar("ifFalse", condition, "", labelEnd);
             visit(ctx.statement(0));
-            addCode(labelEnd + ":");
+            codigo.agregar("label", "", "", labelEnd);
         } else {
             String labelElse = newLabel();
-            addCode("ifFalse " + condition + " goto " + labelElse);
+            codigo.agregar("ifFalse", condition, "", labelElse);
             visit(ctx.statement(0));
-            addCode("goto " + labelEnd);
-            addCode(labelElse + ":");
+            codigo.agregar("goto", "", "", labelEnd);
+            codigo.agregar("label", "", "", labelElse);
             visit(ctx.statement(1));
-            addCode(labelEnd + ":");
+            codigo.agregar("label", "", "", labelEnd);
         }
 
         return null;
@@ -154,7 +140,7 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
             String right = visit(ctx.arithmeticExpr(1));
             String op = ctx.getChild(1).getText();
             String temp = newTemp();
-            addCode(temp + " = " + left + " " + op + " " + right);
+            codigo.agregar(op, left, right, temp);
             return temp;
         }
 
@@ -166,14 +152,14 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         String startLabel = newLabel();
         String endLabel = newLabel();
 
-        addCode(startLabel + ":");
+        codigo.agregar("label", "", "", startLabel);
         String condition = visit(ctx.expression());
-        addCode("ifFalse " + condition + " goto " + endLabel);
+        codigo.agregar("ifFalse", condition, "", endLabel);
 
         visit(ctx.statement());
 
-        addCode("goto " + startLabel);
-        addCode(endLabel + ":");
+        codigo.agregar("goto", "", "", startLabel);
+        codigo.agregar("label", "", "", endLabel);
 
         return null;
     }
@@ -182,13 +168,13 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
     public String visitRepeatStatement(InterpreterParser.RepeatStatementContext ctx) {
         String startLabel = newLabel();
 
-        addCode(startLabel + ":");
+        codigo.agregar("label", "", "", startLabel);
 
         visit(ctx.statements());
 
         String condition = visit(ctx.expression());
 
-        addCode("ifFalse " + condition + " goto " + startLabel);
+        codigo.agregar("ifFalse", condition, "", startLabel);
 
         return null;
     }
@@ -198,11 +184,11 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         inFunction = true;
         currentFunctionName = ctx.ID().getText();
 
-        addCode(currentFunctionName + ":");
+        codigo.agregar("label", "", "", currentFunctionName);
 
         visit(ctx.block());
 
-        addCode("end " + currentFunctionName);
+        codigo.agregar("end", "", "", currentFunctionName);
 
         currentFunctionName = null;
         inFunction = false;
@@ -213,18 +199,16 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
     @Override
     public String visitLogicalExpr(InterpreterParser.LogicalExprContext ctx) {
         if (ctx.comparisonExpr().size() == 1) {
-            // Caso base: solo una comparación
             return visit(ctx.comparisonExpr(0));
         }
 
         String left = visit(ctx.comparisonExpr(0));
         for (int i = 1; i < ctx.comparisonExpr().size(); i++) {
             String right = visit(ctx.comparisonExpr(i));
-            String op = ctx.getChild(2 * i - 1).getText().toLowerCase(); // AND, OR
+            String op = ctx.getChild(2 * i - 1).getText().toLowerCase();
 
             String temp = newTemp();
-            // Generar código para operación lógica
-            addCode(temp + " = " + left + " " + op + " " + right);
+            codigo.agregar(op, left, right, temp);
             left = temp;
         }
         return left;
