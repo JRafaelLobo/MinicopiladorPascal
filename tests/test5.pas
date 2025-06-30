@@ -5,5 +5,6 @@ begin
   j := 0;
   repeat
     j := j + 2;
-  until j >= 10;
+  until j >= 12;
+  write(j);
 end.
