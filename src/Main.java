@@ -1,7 +1,4 @@
-import Interpreter.InterpreterLexer;
-import Interpreter.InterpreterParser;
-import Interpreter.SemanticVisitor;
-import Interpreter.VerboseListener;
+import Interpreter.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
@@ -11,7 +8,7 @@ public class Main {
     public static void main(String[] args) {
         try {
             // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
-            CharStream input = CharStreams.fromFileName("tests/testReadWrite.pas");
+            CharStream input = CharStreams.fromFileName("tests/test9.pas");
 
             // Instancia el analizador léxico generado por ANTLR
             InterpreterLexer lexer = new InterpreterLexer(input);
@@ -44,6 +41,15 @@ public class Main {
             System.out.println("Errores semánticos:");
             for (String error : semanticVisitor.getErrors()) {
                 System.err.println(error);
+            }
+
+            // Generación de IR
+            IRGeneratorVisitor irGen = new IRGeneratorVisitor();
+            irGen.visit(tree);
+
+            System.out.println("\nCódigo intermedio de tres direcciones:");
+            for (String instr : irGen.getCode()) {
+                System.out.println(instr);
             }
 
         } catch (IOException e) {

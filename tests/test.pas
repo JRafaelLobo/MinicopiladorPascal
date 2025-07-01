@@ -1,10 +1,16 @@
-PROGRAM ConditionalTest;
-VAR
-    num: INTEGER;
-BEGIN
-    num := 10;
-    IF num > 5 THEN
-        WRITE('Mayor que 5')
-    ELSE
-        WRITE('Menor o igual a 5');
-END.
+program PruebaSemantica;
+
+var
+  x: integer;
+  y: boolean;
+
+function Sumar: integer;
+begin
+  Sumar := 10;
+end;
+
+begin
+  x := 5;
+  y := true;
+  x := Sumar();  { ✅ Esta llamada pasa, aunque no verifiques parámetros aún }
+end.

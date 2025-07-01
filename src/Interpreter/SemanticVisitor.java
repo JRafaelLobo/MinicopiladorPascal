@@ -1,6 +1,7 @@
 package Interpreter;
 
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import java.util.*;
 
@@ -159,23 +160,82 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
         return null;
     }
 
+    private InterpreterParser.FunctionCallContext findFunctionCall(org.antlr.v4.runtime.tree.ParseTree tree) {
+        if (tree instanceof InterpreterParser.FunctionCallContext) {
+            return (InterpreterParser.FunctionCallContext) tree;
+        }
+        for (int i = 0; i < tree.getChildCount(); i++) {
+            InterpreterParser.FunctionCallContext result = findFunctionCall(tree.getChild(i));
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+
     // Inferencia de tipo de una expresión para validación
-    private String inferType(InterpreterParser.ExpressionContext expr) {
-        String text = expr.getText();
+    private String inferType(ParseTree node) {
+        if (node == null) return "unknown";
 
-        if (text.equalsIgnoreCase("true") || text.equalsIgnoreCase("false")) return "boolean";
+        // Manejo de llamadas a funciones (si estamos dentro de una expresión)
+        if (node instanceof InterpreterParser.ExpressionContext exprCtx) {
+            InterpreterParser.FunctionCallContext call = findFunctionCall(exprCtx);
+            if (call != null) {
+                String name = call.ID().getText();
+                Symbol func = functions.get(name);
+                if (func != null) return func.type;
+            }
+        }
+
+        String text = node.getText().toLowerCase();
+
+        // Booleanos
+        if (text.equals("true") || text.equals("false")) return "boolean";
+
+        // Enteros
         if (text.matches("^\\d+$")) return "integer";
-        if (text.matches("^'.'$")) return "char";
-        if (text.matches("^'.*'$")) return "string";
 
-        if (expr.getChildCount() == 1 && expr.getChild(0) instanceof TerminalNode) {
-            String varName = expr.getText();
+        // Caracter
+        if (text.matches("^'.'$")) return "char";
+
+        // Cadenas
+        if (text.matches("^\".*\"$") || text.matches("^'.*'$")) return "string";
+
+        // Identificador simple
+        if (node instanceof TerminalNode) {
+            String varName = node.getText();
             Symbol symbol = currentScope.resolve(varName);
             if (symbol != null) return symbol.type;
         }
 
+        // Operación binaria (ej: a + b, b * 2)
+        if (node.getChildCount() == 3) {
+            String leftType = inferType(node.getChild(0));
+            String rightType = inferType(node.getChild(2));
+            String operator = node.getChild(1).getText();
+
+            if (leftType.equals("integer") && rightType.equals("integer")) return "integer";
+            if (leftType.equals("string") && rightType.equals("string")) return "string";
+            if (leftType.equals("char") && rightType.equals("char")) return "string";
+            if (leftType.equals("boolean") && rightType.equals("boolean")) return "boolean";
+            return "unknown";
+        }
+
+        // Subexpresiones
+        if (node.getChildCount() == 1) {
+            return inferType(node.getChild(0));
+        }
+
+        // Exploración general
+        for (int i = 0; i < node.getChildCount(); i++) {
+            String childType = inferType(node.getChild(i));
+            if (!childType.equals("unknown")) return childType;
+        }
+
         return "unknown";
     }
+
+
+
 
     // Asignaciones
     @Override
@@ -190,8 +250,15 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
                 reportError(ctx.getStart(), "Asignación con tipo incompatible: " + exprType + " a " + symbol.type);
             }
         }
+
+        // ✅ Marcar retorno si se está asignando al nombre de la función
+        if (insideFunction && varName.equals(currentFunctionName)) {
+            hasReturnValue = true;
+        }
+
         return visit(ctx.expression());
     }
+
 
     // Llamadas a funciones
     @Override
@@ -266,6 +333,13 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
     // Validación del uso de identificadores (ej. en expresiones)
     @Override
     public Void visitFactor(InterpreterParser.FactorContext ctx) {
+        String text = ctx.getText().toLowerCase();
+
+        if (text.equals("true") || text.equals("false")) {
+            // Constantes booleanas válidas
+            return null;
+        }
+
         if (ctx.ID() != null) {
             String name = ctx.ID().getText();
             Symbol symbol = currentScope.resolve(name);
@@ -273,6 +347,7 @@ public class SemanticVisitor extends InterpreterBaseVisitor<Void> {
                 reportError(ctx.ID().getSymbol(), "Identificador no declarado: " + name);
             }
         }
+
         return visitChildren(ctx);
     }
 }

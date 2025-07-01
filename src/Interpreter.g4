@@ -13,7 +13,13 @@ varDeclList : varDecl (';' varDecl)* ';'? ;
 
 varDecl : ID (',' ID)* ':' type ;
 
-type : INTEGER | CHAR | STRING | BOOLEAN | ARRAY '[' indexList ']' OF type ;
+type
+  : INTEGER
+  | CHAR
+  | STRING
+  | BOOLEAN
+  | ARRAY LBRACKET indexList RBRACKET OF type
+  ;
 
 indexList : INT_CONST '..' INT_CONST (',' INT_CONST '..' INT_CONST)* ;
 
@@ -58,7 +64,7 @@ arithmeticExpr : term ((PLUS | MINUS) term)* ;
 
 term : factor ((MULT | DIV_OP | DIV | MOD) factor)* ;
 
-factor : (PLUS | MINUS)? (ID | INT_CONST | CHAR_CONST | STRING_CONST | arrayAccess | functionCall | '(' expression ')' | NOT factor) ;
+factor : (PLUS | MINUS)? (ID | INT_CONST | CHAR_CONST | STRING_CONST | TRUE | FALSE | arrayAccess | functionCall | '(' expression ')' | NOT factor) ;
 
 // --- Corrección para permitir funciones y procedimientos con y sin paréntesis ---
 functionDecl : FUNCTION ID ( '(' parameters? ')' )? ':' type ';' block ';' ;
@@ -126,9 +132,6 @@ SEMICOLON : ';';
 COMMA     : ',';
 DOT       : '.';
 
-// Identificadores
-ID : [a-zA-Z_][a-zA-Z0-9_]* ;
-
 // Constantes
 INT_CONST  : [0-9]+ ;
 CHAR_CONST : '\'' . '\'' ;
@@ -143,3 +146,6 @@ WS : [ \t\r\n]+ -> skip ;
 // Errores léxicos
 ERROR : . { System.err.println("Error léxico en línea " + getLine() +
             ", columna " + getCharPositionInLine() + ": carácter inesperado '" + getText() + "'"); } -> skip ;
+
+// Identificadores
+ID : [a-zA-Z_][a-zA-Z0-9_]* ;

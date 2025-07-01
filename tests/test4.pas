@@ -1,6 +1,10 @@
-PROGRAM ErrorExample;
-VAR
-    x: INTEGER;
-BEGIN
-    x = 10;
-END.
+program Test4;
+var
+  i: integer;
+begin
+  i := 0;
+  while i < 5 do
+  begin
+    i := i + 1;
+  end;
+end.
