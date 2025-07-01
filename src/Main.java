@@ -1,16 +1,19 @@
 import Interpreter.*;
 import RepresentacionIntermedia.CodigoIntermedio;
 import RepresentacionIntermedia.Cuadruplo;
+import RepresentacionIntermedia.LLVMGenerator;
+import RepresentacionIntermedia.LLVMWriter;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
         try {
             // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
-            CharStream input = CharStreams.fromFileName("tests/test5.pas");
+            CharStream input = CharStreams.fromFileName("tests/test1.pas");
 
             // Instancia el analizador léxico generado por ANTLR
             InterpreterLexer lexer = new InterpreterLexer(input);
@@ -45,7 +48,7 @@ public class Main {
                 System.err.println(error);
             }
 
-            // Generación de IR
+            // IR - Cuadruplos
             IRGeneratorVisitor irGen = new IRGeneratorVisitor();
             irGen.visit(tree);
 
@@ -55,6 +58,21 @@ public class Main {
             for (Cuadruplo c : codigo.getCuadruplos()) {
                 System.out.println(c);
             }
+
+            //IR - LLVM
+            LLVMGenerator llvmGen = new LLVMGenerator();
+            List<String> instruccionesLLVM = llvmGen.generar(codigo.getCuadruplos());
+            LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM);
+
+            // Mostrar en consola
+            System.out.println("\nCódigo LLVM generado:");
+            for (String linea : instruccionesLLVM) {
+                System.out.println(linea);
+            }
+            System.out.println();
+
+            // Guardar en archivo salida.ll
+            LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM);
 
         } catch (IOException e) {
             // Manejo de error si el archivo no puede abrirse

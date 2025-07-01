@@ -213,4 +213,16 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         }
         return left;
     }
+
+    @Override
+    public String visitWriteStatement(InterpreterParser.WriteStatementContext ctx) {
+        // El primer hijo dentro de paréntesis es la lista de expresiones opcional
+        if (ctx.expression() != null && !ctx.expression().isEmpty()) {
+            for (InterpreterParser.ExpressionContext exprCtx : ctx.expression()) {
+                String expr = visit(exprCtx);
+                codigo.agregar("write", expr, "", "");
+            }
+        }
+        return null;
+    }
 }
