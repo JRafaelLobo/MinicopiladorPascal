@@ -1,6 +1,6 @@
 PROGRAM Test;
 VAR
-    x, y: INTEGER;
+    x, y: INTEGE;
 BEGIN
     x := 10;
     y := x + 5;
