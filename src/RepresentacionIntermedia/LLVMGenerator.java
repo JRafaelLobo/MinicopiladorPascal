@@ -95,7 +95,7 @@ public class LLVMGenerator {
 
         // Solo registrar tipo si aún no se ha registrado
         if (!varTypes.containsKey(name)) {
-            if (name.startsWith("t_bool") || name.startsWith("t") && Character.isDigit(name.charAt(1))) {
+            if (name.startsWith("t_bool") ) {
                 // Heurística para temporales booleanos
                 varTypes.put(name, "i1");
             } else {
