@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -29,16 +30,25 @@ public class Home extends JFrame {
         compilarButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println(textBox.getText());
+                consola.setText("");
+                //System.out.println(textBox.getText());
                 String texto = textBox.getText();
-                Copilar(texto);
+                Compilar(texto);
 
             }
         });
         mostrarIRButton.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println("Mostrar IR");
+                // Muestra el resultado en una ventana emergente
+
+                JTextArea textArea = new JTextArea(IR);
+                textArea.setEditable(false);
+                JScrollPane scrollPane = new JScrollPane(textArea);
+                scrollPane.setPreferredSize(new Dimension(600, 400));
+
+                JOptionPane.showMessageDialog(null, scrollPane, "Código LLVM IR", JOptionPane.INFORMATION_MESSAGE);
+
             }
         });
         cargarButton.addMouseListener(new MouseAdapter() {
@@ -85,8 +95,8 @@ public class Home extends JFrame {
         home.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
-    private void Copilar(String entrada) {
-        consola.append("Copilando..." + "\n");
+    private void Compilar(String entrada) {
+        consola.append("Compilando..." + "\n");
 
         // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
         CharStream input = CharStreams.fromString(entrada);
@@ -111,15 +121,16 @@ public class Home extends JFrame {
         ParseTree tree = parser.program();
 
         // Imprime el árbol sintáctico generado
-        consola.append("Árbol sintáctico:" + "\n");
-        consola.append(tree.toStringTree(parser) + "\n");
+        //consola.append("Árbol sintáctico:" + "\n");
+        //consola.append(tree.toStringTree(parser) + "\n");
 
         // Realiza el análisis semántico sobre el árbol
         SemanticVisitor semanticVisitor = new SemanticVisitor();
         semanticVisitor.visit(tree);
 
         // Muestra los errores semánticos recolectados (si existen)
-        consola.append(tree.toStringTree(parser) + "\n");
+        //consola.append(tree.toStringTree(parser) + "\n");
+        IR = "";
         for (String error : semanticVisitor.getErrors()) {
             consola.append(error + "\n");
         }
@@ -128,28 +139,30 @@ public class Home extends JFrame {
         IRGeneratorVisitor irGen = new IRGeneratorVisitor();
         irGen.visit(tree);
 
-        consola.append("\nCódigo intermedio de tres direcciones:\n");
+        //consola.append("\nCódigo intermedio de tres direcciones:\n");
         CodigoIntermedio codigo = irGen.getCodigo();
 
-        for (Cuadruplo c : codigo.getCuadruplos()) {
-            consola.append(String.valueOf(c) + "\n");
-        }
+//        for (Cuadruplo c : codigo.getCuadruplos()) {
+//            consola.append(String.valueOf(c) + "\n");
+//        }
 
         //IR - LLVM
         LLVMGenerator llvmGen = new LLVMGenerator();
         List<String> instruccionesLLVM = llvmGen.generar(codigo.getCuadruplos());
         LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM);
 
-        // Mostrar en consola
-        consola.append("\nCódigo LLVM generado:");
+         //Mostrar en consola
+        //IR += ("\nCódigo LLVM generado:\n" );
         for (String linea : instruccionesLLVM) {
-            consola.append(linea + "\n");
+            IR += (linea + "\n");
         }
+
         consola.append("\n");
 
         // Guardar en archivo salida.ll
         consola.append(LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM)+ "\n\n");
     }
+
+    private String IR;
+
 }
-
-

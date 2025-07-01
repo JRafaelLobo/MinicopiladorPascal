@@ -21,7 +21,6 @@ public class LLVMGenerator {
         endsWithBranch = false;
 
         List<String> llvmCode = new ArrayList<>();
-        llvmCode.add("; Código LLVM generado");
         llvmCode.add("declare i32 @printf(i8*, ...)");
         llvmCode.add("@.str = private constant [4 x i8] c\"%d\\0A\\00\"");
 
@@ -95,7 +94,7 @@ public class LLVMGenerator {
 
         // Solo registrar tipo si aún no se ha registrado
         if (!varTypes.containsKey(name)) {
-            if (name.startsWith("t_bool") ) {
+            if (name.startsWith("t_bool") || name.startsWith("t") && Character.isDigit(name.charAt(1))) {
                 // Heurística para temporales booleanos
                 varTypes.put(name, "i1");
             } else {

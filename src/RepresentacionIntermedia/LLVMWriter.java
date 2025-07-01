@@ -11,10 +11,8 @@ public class LLVMWriter {
             for (String instruccion : instruccionesLLVM) {
                 writer.write(instruccion + System.lineSeparator());
             }
-            System.out.println("Archivo LLVM generado correctamente: " + nombreArchivo);
             return "Archivo LLVM generado correctamente: " + nombreArchivo;
         } catch (IOException e) {
-            System.err.println("Error al escribir el archivo LLVM: " + e.getMessage());
             return "Error al escribir el archivo LLVM: " + e.getMessage();
         }
     }
