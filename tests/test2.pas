@@ -5,4 +5,5 @@ begin
   a := 10;
   if a > 5 then
     a := a - 1;
+  write(a);
 end.

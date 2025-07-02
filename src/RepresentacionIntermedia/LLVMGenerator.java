@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import java.util.*;
 
 public class LLVMGenerator {
@@ -105,8 +104,26 @@ public class LLVMGenerator {
 
     private void emitAssignment(List<String> code, Cuadruplo c) {
         String val = loadValue(code, c.getArg1());
-        String tipo = varTypes.getOrDefault(c.getResultado(), "i32");
-        code.add("  store " + tipo + " " + val + ", " + tipo + "* %" + c.getResultado());
+        String destType = varTypes.getOrDefault(c.getResultado(), "i32");
+        String sourceType = getLLVMTypeOf(val);
+
+        // Si el tipo fuente y destino no coinciden, convertir si es posible
+        if (!destType.equals(sourceType)) {
+            String tmp = newTemp();
+            if ("i32".equals(sourceType) && "i1".equals(destType)) {
+                // truncar de i32 a i1
+                code.add("  %" + tmp + " = trunc i32 " + val + " to i1");
+            } else if ("i1".equals(sourceType) && "i32".equals(destType)) {
+                // extender de i1 a i32
+                code.add("  %" + tmp + " = zext i1 " + val + " to i32");
+            } else {
+                code.add("  ; No se puede convertir de " + sourceType + " a " + destType);
+                tmp = val;
+            }
+            val = "%" + tmp;
+        }
+
+        code.add("  store " + destType + " " + val + ", " + destType + "* %" + c.getResultado());
     }
 
     private void emitBinaryOp(List<String> code, String llvmOp, Cuadruplo c) {
@@ -176,4 +193,18 @@ public class LLVMGenerator {
     private String newTemp() {
         return "tmp" + (tempVarCounter++);
     }
+
+    private String getLLVMTypeOf(String val) {
+        if (val.matches("%tmp\\d+")) {
+            // Heurística simple: buscar la variable que originó ese temp
+            // No es perfecto, pero ayuda en casos básicos
+            return "i32";  // por defecto asumimos i32 si no sabemos
+        }
+        if (variables.contains(val)) {
+            return varTypes.getOrDefault(val, "i32");
+        }
+        if (val.matches("\\d+")) return "i32";
+        return "i32";  // por defecto
+    }
+
 }
