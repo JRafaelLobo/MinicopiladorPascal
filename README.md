@@ -48,6 +48,7 @@ Un compilador sencillo de Pascal escrito en **Java**, utilizando **ANTLR 4** par
 ---
 
 ## 🚀 Cómo compilar y ejecutar
+
 Utilizar Intellij Idea para copilar y ejecutar
 
 Esto generará `salida.ll` y `salida.bc`.
@@ -60,7 +61,6 @@ clang salida.ll -o programa
 ```
 
 ---
-
 
 ## 📘 Ejemplo de uso
 
@@ -89,15 +89,11 @@ Salida esperada: `25`
 
 ## 👨‍👩‍👧‍👦 Colaboradores
 
-| Nombre           | 
-|------------------|
-| JRafaelLobo      | 
-| Jorge López      |
-| Oliver IrahetaX  |
+
+| Nombre          |
+| --------------- |
+| JRafaelLobo     |
+| Jorge López    |
+| Oliver IrahetaX |
 
 ---
-## 📥 Descarga
-
-Puedes descargar el ejecutable desde el siguiente enlace:
-
-[MiniPascal.exe](ruta/al/archivo.zip)
