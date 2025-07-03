@@ -12,10 +12,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 
 public class Home extends JFrame {
@@ -98,70 +95,82 @@ public class Home extends JFrame {
     private void Compilar(String entrada) {
         consola.append("Compilando..." + "\n");
 
-        // Lee el archivo fuente Mini-Pascal (.pas) como flujo de caracteres
-        CharStream input = CharStreams.fromString(entrada);
+        try {
+            // Capturar errores de System.err temporalmente
+            ByteArrayOutputStream errorBuffer = new ByteArrayOutputStream();
+            PrintStream originalErr = System.err;
+            System.setErr(new PrintStream(errorBuffer));
 
-        // Instancia el analizador léxico generado por ANTLR
-        InterpreterLexer lexer = new InterpreterLexer(input);
-        // Quita los manejadores de errores por defecto del lexer
-        lexer.removeErrorListeners();
-        // Agrega un listener personalizado para reportar errores léxicos
-        lexer.addErrorListener(new VerboseListener());
+            // 1. Análisis léxico
+            CharStream input = CharStreams.fromString(entrada);
+            InterpreterLexer lexer = new InterpreterLexer(input);
+            lexer.removeErrorListeners();
+            lexer.addErrorListener(new VerboseListener(consola));
 
-        // Crea el flujo de tokens a partir del lexer
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        // Instancia el parser generado por ANTLR
-        InterpreterParser parser = new InterpreterParser(tokens);
-        // Quita los manejadores de errores por defecto del parser
-        parser.removeErrorListeners();
-        // Agrega un listener personalizado para errores sintácticos
-        parser.addErrorListener(new VerboseListener(consola));
+            // 2. Tokens
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        // Comienza el análisis sintáctico desde la regla principal "program"
-        ParseTree tree = parser.program();
+            // 3. Análisis sintáctico
+            InterpreterParser parser = new InterpreterParser(tokens);
+            parser.removeErrorListeners();
+            parser.addErrorListener(new VerboseListener(consola));
 
-        // Imprime el árbol sintáctico generado
-        //consola.append("Árbol sintáctico:" + "\n");
-        //consola.append(tree.toStringTree(parser) + "\n");
+            // 4. Parse
+            ParseTree tree = parser.program();
 
-        // Realiza el análisis semántico sobre el árbol
-        SemanticVisitor semanticVisitor = new SemanticVisitor();
-        semanticVisitor.visit(tree);
+            // Restaurar System.err
+            System.err.flush();
+            System.setErr(originalErr);
 
-        // Muestra los errores semánticos recolectados (si existen)
-        //consola.append(tree.toStringTree(parser) + "\n");
-        IR = "";
-        for (String error : semanticVisitor.getErrors()) {
-            consola.append(error + "\n");
+            // Verifica errores sintácticos/léxicos capturados
+            String erroresCapturados = errorBuffer.toString();
+            if (!erroresCapturados.isEmpty()) {
+                consola.append("\n❌ Compilación detenida por errores léxicos o sintácticos.\n");
+                JOptionPane.showMessageDialog(null, "Error de sintaxis. Revisa el código fuente.");
+                return;
+            }
+
+            // 5. Análisis semántico
+            SemanticVisitor semanticVisitor = new SemanticVisitor();
+            semanticVisitor.visit(tree);
+            for (String error : semanticVisitor.getErrors()) {
+                consola.append(error + "\n");
+            }
+
+            // Si hay errores semánticos, detener compilación
+            if (!semanticVisitor.getErrors().isEmpty()) {
+                consola.append("\n❌ Compilación detenida por errores semánticos.\n");
+                JOptionPane.showMessageDialog(null, "Error semántico. Revisa el código fuente.");
+                return;
+            }
+
+            // 6. Generación de código intermedio
+            IRGeneratorVisitor irGen = new IRGeneratorVisitor();
+            irGen.visit(tree);
+            CodigoIntermedio codigo = irGen.getCodigo();
+
+            // 7. LLVM IR
+            LLVMGenerator llvmGen = new LLVMGenerator();
+            List<String> instruccionesLLVM = llvmGen.generar(codigo.getCuadruplos());
+
+            // 8. Guardar archivo
+            consola.append("\n");
+            consola.append(LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM) + "\n\n");
+
+            // Mostrar LLVM en consola
+            IR = "";
+            for (String linea : instruccionesLLVM) {
+                IR += (linea + "\n");
+            }
+
+            JOptionPane.showMessageDialog(null, "✅ Compilación Exitosa!");
+
+        } catch (Exception e) {
+            consola.append("⚠️ Error durante la compilación: " + e.getMessage() + "\n");
+            e.printStackTrace();
         }
-
-        // IR - Cuadruplos
-        IRGeneratorVisitor irGen = new IRGeneratorVisitor();
-        irGen.visit(tree);
-
-        //consola.append("\nCódigo intermedio de tres direcciones:\n");
-        CodigoIntermedio codigo = irGen.getCodigo();
-
-//        for (Cuadruplo c : codigo.getCuadruplos()) {
-//            consola.append(String.valueOf(c) + "\n");
-//        }
-
-        //IR - LLVM
-        LLVMGenerator llvmGen = new LLVMGenerator();
-        List<String> instruccionesLLVM = llvmGen.generar(codigo.getCuadruplos());
-        LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM);
-
-         //Mostrar en consola
-        //IR += ("\nCódigo LLVM generado:\n" );
-        for (String linea : instruccionesLLVM) {
-            IR += (linea + "\n");
-        }
-
-        consola.append("\n");
-
-        // Guardar en archivo salida.ll
-        consola.append(LLVMWriter.escribirArchivo("salida.ll", instruccionesLLVM)+ "\n\n");
     }
+
 
     private String IR;
 

@@ -9,4 +9,5 @@ end;
 
 begin
   r := mul(3, 4);
+  write(r);
 end.

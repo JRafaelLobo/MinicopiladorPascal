@@ -7,4 +7,5 @@ begin
     b := 1
   else
     b := b + 1;
+  write(b);
 end.

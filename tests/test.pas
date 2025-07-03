@@ -12,5 +12,6 @@ end;
 begin
   x := 5;
   y := true;
-  x := Sumar();  { ✅ Esta llamada pasa, aunque no verifiques parámetros aún }
+  x := Sumar();
+  write
 end.

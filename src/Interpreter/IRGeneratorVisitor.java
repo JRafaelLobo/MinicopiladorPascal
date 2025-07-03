@@ -139,8 +139,20 @@ public class IRGeneratorVisitor extends InterpreterBaseVisitor<String> {
         if (ctx.arithmeticExpr().size() > 1) {
             String right = visit(ctx.arithmeticExpr(1));
             String op = ctx.getChild(1).getText();
+
+            // Traducir operador de Pascal a operador de comparación
+            String translatedOp = switch (op) {
+                case "="  -> "==";
+                case "<>" -> "!=";
+                case "<"  -> "<";
+                case "<=" -> "<=";
+                case ">"  -> ">";
+                case ">=" -> ">=";
+                default   -> op;  // por si acaso
+            };
+
             String temp = newTemp();
-            codigo.agregar(op, left, right, temp);
+            codigo.agregar(translatedOp, left, right, temp);
             return temp;
         }
 
